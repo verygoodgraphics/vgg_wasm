@@ -1,0 +1,39 @@
+{
+  "name": "@verygoodgraphics/vgg-wasm",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/vgg-wasm.umd.cjs",
+  "module": "./dist/vgg-wasm.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/vgg-wasm.js",
+      "require": "./dist/vgg-wasm.umd.cjs"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*",
+        "./dist/index.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "@types/offscreencanvas": "^2019.7.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vite-plugin-dts": "^3.6.3"
+  }
+}
