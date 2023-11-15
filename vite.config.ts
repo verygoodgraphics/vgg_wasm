@@ -6,8 +6,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, "lib/main.ts"),
-      name: "vgg-core",
-      fileName: "vgg-core",
+      name: "vgg-wasm",
+      fileName: "vgg-wasm",
     },
   },
   plugins: [dts({ rollupTypes: true })],
