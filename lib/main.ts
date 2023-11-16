@@ -1,16 +1,44 @@
 export interface VGGProps {
   canvas: HTMLCanvasElement | OffscreenCanvas
   src: string
-  runtime: string
+  runtime?: string
   onLoad?: EventCallback
   onLoadError?: EventCallback
   onStateChange?: EventCallback
 }
 
+enum State {
+  Loading = "loading",
+  Ready = "ready",
+  Error = "error",
+}
+
+export interface VGGWasmInstance {
+  ccall: (
+    ident: string,
+    returnType: string,
+    argTypes: string[],
+    args: any[]
+  ) => any
+}
+
+declare global {
+  interface Window {
+    _vgg_createWasmInstance: any
+  }
+}
+
 // Canvas renderer
 export class VGG {
+  private defaultRuntime: string =
+    "https://s5.vgg.cool/runtime/latest/vgg_runtime.js"
+
   // Canvas in which to render the artboard
   private readonly canvas: HTMLCanvasElement | OffscreenCanvas
+
+  private width: number = 0
+  private height: number = 0
+  private editMode: boolean = false
 
   // A url to a Daruma file
   private src: string
@@ -21,6 +49,10 @@ export class VGG {
   // Holds event listeners
   private eventManager: EventManager
 
+  private state: State = State.Loading
+
+  private vggWasmInstance: VGGWasmInstance | null = null
+
   // Error message for missing source
   private static readonly missingErrorMessage: string =
     "Daruma source file required"
@@ -29,7 +61,9 @@ export class VGG {
     console.log("VGGCanvas")
     this.canvas = props.canvas
     this.src = props.src
-    this.runtime = props.runtime
+    this.runtime = props.runtime || this.defaultRuntime
+    this.width = this.canvas?.width ?? 0
+    this.height = this.canvas?.height ?? 0
 
     // New event management system
     this.eventManager = new EventManager()
@@ -40,13 +74,47 @@ export class VGG {
     this.init({ ...props })
   }
 
-  private init({ src, runtime }: VGGProps) {
+  private init({ src }: VGGProps) {
     this.src = src
-    this.runtime = runtime
+    this.insertScript(this.runtime)
 
     if (!this.src) {
       throw new Error(VGG.missingErrorMessage)
     }
+
+    requestAnimationFrame(() => this.checkState())
+  }
+
+  private async checkState() {
+    if (window._vgg_createWasmInstance) {
+      const wasmInstance = await window._vgg_createWasmInstance({
+        noInitialRun: true,
+        canvas: this.canvas,
+        locateFile: function (path: string, prefix: string) {
+          if (path.endsWith(".data")) {
+            return "https://s5.vgg.cool/runtime/latest/" + path
+          }
+          return prefix + path
+        },
+      })
+
+      if (wasmInstance) {
+        this.vggWasmInstance = wasmInstance
+        this.state = State.Ready
+        this.eventManager.fire({ type: EventType.Load })
+      } else {
+        this.state = State.Error
+        this.eventManager.fire({ type: EventType.LoadError })
+      }
+    } else {
+      requestAnimationFrame(() => this.checkState())
+    }
+  }
+
+  private insertScript(src: string) {
+    const script = document.createElement("script")
+    script.src = src
+    document.head.appendChild(script)
   }
 
   /**
@@ -59,6 +127,50 @@ export class VGG {
       type: type,
       callback: callback,
     })
+  }
+
+  public async run(
+    darumaUrl?: string,
+    opts?: {
+      width: number
+      height: number
+      editMode?: boolean
+    }
+  ) {
+    this.width = opts?.width ?? this.width
+    this.height = opts?.height ?? this.height
+    this.editMode = opts?.editMode ?? this.editMode
+
+    console.log("run")
+    if (!this.vggWasmInstance) {
+      throw new Error("VGG Wasm instance not ready")
+    }
+
+    try {
+      this.vggWasmInstance.ccall(
+        "emscripten_main",
+        "void",
+        ["number", "number", "boolean"],
+        [this.width, this.height, this.editMode]
+      )
+    } catch (err) {
+      console.error(err)
+    }
+
+    const res = await fetch(this.src)
+    if (!res.ok) throw new Error("Failed to fetch Daruma file")
+    const buffer = await res.arrayBuffer()
+    const data = new Int8Array(buffer)
+    if (
+      !this.vggWasmInstance.ccall(
+        "load_file_from_mem",
+        "boolean", // return type
+        ["string", "array", "number"], // argument types
+        ["name", data, data.length]
+      )
+    ) {
+      throw new Error("Failed to load Daruma file")
+    }
   }
 }
 
