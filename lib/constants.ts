@@ -5,6 +5,7 @@ export enum EventType {
   Load = "load",
   LoadError = "loaderror",
   StateChange = "statechange",
+  OnClick = "onclick",
 }
 
 export enum State {

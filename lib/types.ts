@@ -1,6 +1,6 @@
 import { EventType } from "./constants"
 
-export type EventCallback = (event: VGGEvent) => void
+export type EventCallback = (event: VGGEvent) => Promise<void>
 
 /**
  * Event listeners registered with the event manager
@@ -64,6 +64,7 @@ interface EventListners {
 export interface VggSdkType {
   // addObserver(observer: VggSdkObserver): void;
 
+  getEnvKey(): string
   getDesignDocument(): string
 
   addAt(path: string, value: string): void
