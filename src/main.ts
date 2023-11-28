@@ -1,5 +1,7 @@
 import "./style.css"
-import { VGG, EventType } from "../lib/main"
+import { VGG } from "../lib/main"
+import { State } from "../lib/constants"
+import { Generated_Nodes_Type } from "./main.d"
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div>
@@ -8,28 +10,37 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   </div>
 `
 
-const vgg = new VGG({
+const vgg = new VGG<Generated_Nodes_Type>({
   src: "https://s3.vgg.cool/test/vgg.daruma",
   runtime: "https://s3.vgg.cool/test/runtime/latest",
-  editMode: true,
+  // editMode: true,
   verbose: true,
   canvas: document.querySelector("#canvas") as HTMLCanvasElement,
-  onLoad: async (event) => {
-    console.log("Loaded", event)
-    await vgg.render()
-    await vgg.getDesignDocument()
-  },
-  onLoadError: async (event) => {
-    console.log("Load Error", event)
-  },
-  onStateChange: async (state) => {
-    console.log("State Change", state)
-  },
-  onClick: async (element) => {
-    console.log("OnClick", element)
-  },
+  // onLoad: async (event) => console.log("Load", event),
+  // onLoadError: async (event) => console.log("Load Error", event),
+  // onStateChange: async (state) => console.log("State Change", state),
 })
 
-vgg.$("2:116").on("click", () => {
-  window.alert("Hello, VGG!")
-})
+await vgg.load()
+
+if (vgg.state === State.Ready) {
+  await vgg.render()
+
+  // {
+  // const { nodes } = await vgg.render()
+  // const keys = Object.keys(nodes)
+  //   .map((i) => `"${i}"`)
+  //   .join(" | ")
+  // console.log(keys)
+  // }
+
+  vgg.$("2:94").on("click", () => {
+    window.alert("Hello, VGG!")
+  })
+
+  // vgg.addEventListener(
+  //   "/frames/0/childObjects/0",
+  //   "click",
+  //   'export default () => {console.log("Hello, VGG!")}'
+  // )
+}

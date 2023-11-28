@@ -13,11 +13,22 @@ export interface VGGProps {
   onLoad?: EventCallback
   onLoadError?: EventCallback
   onStateChange?: EventCallback
-  onClick?: EventCallback
+}
+
+enum Colors {
+  Red = "#EB0013",
+  Green = "#1BA353",
+  Yellow5 = "#f59e0b",
+  Yellow8 = "#78350f",
+}
+
+type VGGNode = {
+  id: string
+  path: string
 }
 
 // Canvas renderer
-export class VGG {
+export class VGG<T> {
   readonly props: VGGProps
 
   private defaultRuntime: string = "https://s5.vgg.cool/runtime/latest"
@@ -39,12 +50,12 @@ export class VGG {
   private runtime: string
 
   // Key to store the wasm instance in globalThis
-  private vggWasmKey: string = "vggWasmKey"
+  public vggInstanceKey: string = ""
 
   // Holds event listeners
   private eventManager: EventManager
 
-  private state: State = State.Loading
+  public state: State = State.Loading
 
   // The VGG Wasm instance
   private vggWasmInstance: VGGWasmInstance | null = null
@@ -56,12 +67,13 @@ export class VGG {
   private static readonly missingErrorMessage: string =
     "Daruma source file required"
 
-  private verboseElement: HTMLDivElement | null = null
-
   private observables: Map<string, any> = new Map()
 
+  private requestAnimationFrame: any
+
+  private VGGNodes: Record<string, any> = {}
+
   constructor(props: VGGProps) {
-    console.log("VGGCanvas")
     this.props = props
     this.canvas = props.canvas
     this.src = props.src
@@ -76,16 +88,18 @@ export class VGG {
     if (props.onLoad) this.on(EventType.Load, props.onLoad)
     if (props.onLoadError) this.on(EventType.LoadError, props.onLoadError)
     if (props.onStateChange) this.on(EventType.StateChange, props.onStateChange)
-    if (props.onClick) this.on(EventType.OnClick, props.onClick)
+  }
 
+  public async load() {
     try {
-      this.init({ ...props })
+      await this.init({ ...this.props })
+      // await this.getDesignDocument()
     } catch (err: any) {
       this.eventManager.fire({ type: EventType.LoadError, data: err.message })
     }
   }
 
-  private init({ src }: VGGProps) {
+  private async init({ src }: VGGProps) {
     this.src = src
     this.insertScript(this.runtime + "/vgg_runtime.js")
 
@@ -98,10 +112,14 @@ export class VGG {
       throw new Error(VGG.missingErrorMessage)
     }
 
-    requestAnimationFrame(() => this.checkState())
+    return new Promise((resolve, reject) => {
+      this.requestAnimationFrame = requestAnimationFrame(() =>
+        this.checkState(resolve)
+      )
+    })
   }
 
-  private async checkState() {
+  private async checkState(resolve: (value: unknown) => void) {
     const runtime = this.runtime
     if (window._vgg_createWasmInstance) {
       const wasmInstance: VGGWasmInstance =
@@ -118,10 +136,8 @@ export class VGG {
 
       if (wasmInstance) {
         this.vggWasmInstance = wasmInstance
-        this.state = State.Ready
 
         try {
-          console.log("emscripten_main", this.width, this.height, this.editMode)
           // TODO: caused unwind error when calling emscripten_main
           this.vggWasmInstance.ccall(
             "emscripten_main",
@@ -136,26 +152,36 @@ export class VGG {
         // Load the VGG SDK
         this.vggSdk = new wasmInstance.VggSdk()
 
-        console.log("vggSdk", this.vggSdk)
-        // debugger
-
         // Mount the wasmInstance to GlobalThis
         // @ts-expect-error
         const globalVggInstances = globalThis["vggInstances"] ?? {}
-        const vggInstanceKey = this.vggSdk.getEnvKey()
+        this.vggInstanceKey = this.vggSdk.getEnvKey()
 
-        if (this.props.onClick) {
+        if (this.editMode) {
           // if onClick is defined, add event listener
           Object.assign(globalVggInstances, {
-            [vggInstanceKey]: {
+            [this.vggInstanceKey]: {
               instance: wasmInstance,
               listener: (event: any) => {
-                console.log("onClick", event)
-                // this.eventManager.fire({
-                //   type: EventType.OnClick,
-                //   data: event,
-                // })
+                const parsedEvent = JSON.parse(event)
+                console.log(
+                  `%cVGGEvent::${parsedEvent.type}`,
+                  `background: ${Colors.Yellow5}; color: ${Colors.Yellow8}; font-weight: bold; border-radius: 2px; padding: 0 2.5px;`,
+                  parsedEvent.id
+                    ? `${parsedEvent.id} → ${parsedEvent.path}`
+                    : ""
+                )
+
+                if (parsedEvent.type === "select") {
+                  this.observables.get(parsedEvent.path)?.next("click")
+                }
               },
+            },
+          })
+        } else {
+          Object.assign(globalVggInstances, {
+            [this.vggInstanceKey]: {
+              instance: wasmInstance,
             },
           })
         }
@@ -163,13 +189,18 @@ export class VGG {
         // @ts-expect-error
         globalThis["vggInstances"] = globalVggInstances
 
+        this.state = State.Ready
         this.eventManager.fire({ type: EventType.Load })
       } else {
         this.state = State.Error
         this.eventManager.fire({ type: EventType.LoadError })
       }
+
+      // clear requestAnimationFrame
+      cancelAnimationFrame(this.requestAnimationFrame)
+      resolve(true)
     } else {
-      requestAnimationFrame(() => this.checkState())
+      requestAnimationFrame(() => this.checkState(resolve))
     }
   }
 
@@ -212,36 +243,6 @@ export class VGG {
       throw new Error("VGG Wasm instance not ready")
     }
 
-    // render verbose logs
-    if (this.verbose) {
-      this.verboseElement = document.createElement("div")
-      this.verboseElement.classList.add("vgg-verbose")
-      this.verboseElement.style.position = "fixed"
-      this.verboseElement.style.top = "16px"
-      this.verboseElement.style.right = "16px"
-      this.verboseElement.style.width = "240px"
-      this.verboseElement.style.height = "360px"
-      this.verboseElement.style.overflow = "auto"
-      this.verboseElement.style.backgroundColor = "white"
-      this.verboseElement.style.zIndex = "9999"
-      this.verboseElement.style.padding = "20px"
-      this.verboseElement.style.boxShadow = "0 0 10px rgba(0,0,0,0.3)"
-      this.verboseElement.style.fontFamily = "monospace"
-      this.verboseElement.style.fontSize = "12px"
-      this.verboseElement.style.lineHeight = "1.5"
-      this.verboseElement.style.color = "black"
-      this.verboseElement.style.borderRadius = "10px"
-
-      this.verboseElement.innerHTML = `
-        <h2>Verbose</h2>
-        <pre></pre>
-      `
-
-      document.body.appendChild(this.verboseElement)
-
-      console.log("Verbose logging enabled")
-    }
-
     const res = await fetch(this.src)
     if (!res.ok) throw new Error("Failed to fetch Daruma file")
     const buffer = await res.arrayBuffer()
@@ -256,35 +257,106 @@ export class VGG {
     ) {
       throw new Error("Failed to load Daruma file")
     }
+
+    const doc = await this.getDesignDocument()
+    return doc
+  }
+
+  private reverseNodes(
+    nodes: Record<string, any>[],
+    map: Map<string, VGGNode>,
+    parentPath: string
+  ) {
+    for (const [index, node] of nodes.entries()) {
+      const currentPath = `${parentPath}/${index}`
+      map.set(node.id, {
+        path: currentPath,
+      } as VGGNode)
+      if (node.childObjects) {
+        this.reverseNodes(node.childObjects, map, currentPath + "/childObjects")
+      }
+    }
   }
 
   public async getDesignDocument() {
-    console.log(this.state)
-
     try {
       const docString = this.vggSdk?.getDesignDocument()
       if (!docString) {
         throw new Error("Failed to get design document")
       }
       const designDoc = JSON.parse(docString)
-      console.log({ designDoc })
-      return designDoc
+      // console.log({ designDoc })
+      const map = new Map<string, VGGNode>()
+      this.reverseNodes(designDoc.frames, map, "/frames")
+      // convert map into object
+      this.VGGNodes = Object.fromEntries(map)
+      return {
+        nodes: this.VGGNodes,
+      }
     } catch (err) {
       console.log(err)
+      return {
+        nodes: [],
+      }
     }
-    return null
   }
 
-  public $(selector: string) {
+  public $(selector: T extends string ? T : string) {
     if (!this.vggSdk) {
       throw new Error("VGG SDK not ready")
     }
-    const isExist = this.observables.get(selector)
+    const path = this.VGGNodes[selector]?.path
+    const isExist = this.observables.get(path)
     if (!isExist) {
-      const newObservable = new Object()
-      this.observables.set(selector, newObservable)
+      const newObservable = new Observable(path, this.vggSdk)
+      this.observables.set(path, newObservable)
       return newObservable
     }
     return isExist
+  }
+
+  // private addEventListener(path: string, type: string, code: string) {
+  //   if (!this.vggSdk) {
+  //     throw new Error("VGG SDK not ready")
+  //   }
+  //   this.vggSdk.addEventListener(path, type, code)
+  // }
+}
+
+class Observable {
+  private selector: string
+  private vggSdk: VggSdkType
+  private eventManager: EventManager = new EventManager()
+
+  constructor(selector: string, vggSdk: VggSdkType) {
+    this.selector = selector
+    this.vggSdk = vggSdk
+  }
+
+  public on(eventType: EventType, callback: EventCallback) {
+    // console.log("on", eventType, callback)
+    this.eventManager.add({
+      type: eventType,
+      callback: callback,
+    })
+    this.addEventListener(
+      this.selector,
+      eventType,
+      `export default ${callback.toString()}`
+    )
+  }
+
+  public next(eventType: EventType) {
+    // console.log("next", eventType)
+    this.eventManager.fire({
+      type: eventType,
+    })
+  }
+
+  private addEventListener(path: string, type: string, code: string) {
+    if (!this.vggSdk) {
+      throw new Error("VGG SDK not ready")
+    }
+    this.vggSdk.addEventListener(path, type, code)
   }
 }
