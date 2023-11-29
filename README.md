@@ -3,7 +3,7 @@
 ## Usage
 
 ```js
-import { VGG } from "vgg-wasm"
+import { VGG } from "@verygoodgraphics/vgg-wasm"
 
 const vgg = await new VGG({
   src: "https://s5.vgg.cool/vgg.daruma",
@@ -17,15 +17,6 @@ if (vgg.state === State.Ready)
 ## API
 
 ### Options
-
-<!-- src: string
-  runtime?: string
-  editMode?: boolean
-  verbose?: boolean
-  dicUrl?: string
-  onLoad?: EventCallback
-  onLoadError?: EventCallback
-  onStateChange?: EventCallback -->
 
 | Option        | Type                                     | Required | Default                            |
 | ------------- | ---------------------------------------- | -------- | ---------------------------------- |

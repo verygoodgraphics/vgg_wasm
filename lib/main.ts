@@ -1,7 +1,8 @@
 import { EventCallback, VGGWasmInstance, VggSdkType } from "./types"
 import { EventType, State } from "./constants"
 import { EventManager } from "./events"
-export { EventType } from "./constants"
+export { EventType, State } from "./constants"
+export type { VGGEvent } from "./types"
 
 export interface VGGProps {
   canvas: HTMLCanvasElement | OffscreenCanvas
@@ -21,7 +22,7 @@ enum Colors {
   Yellow8 = "#78350f",
 }
 
-type VGGNode = {
+export type VGGNode = {
   id: string
   path: string
 }
