@@ -20,11 +20,11 @@ export default defineConfig({
       name: "vgg-wasm",
       fileName: "vgg-wasm",
     },
-    rollupOptions: {
-      input: {
-        main: "!submodules/**/index.html",
-      },
-    },
+    // rollupOptions: {
+    //   input: {
+    //     main: "!submodules/**/index.html",
+    //   },
+    // },
   },
   plugins: [dts({ rollupTypes: true })],
 })

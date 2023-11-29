@@ -1,5 +1,7 @@
 import "./style.css"
-import { VGG } from "../lib/main"
+// import '../dist/index.d.ts'
+// import { VGG, EventType } from "../dist/vgg-wasm.js"
+import { VGG, EventType } from "../lib/main"
 import { State } from "../lib/constants"
 import { Generated_Nodes_Type } from "./main.d"
 
@@ -34,13 +36,7 @@ if (vgg.state === State.Ready) {
   // console.log(keys)
   // }
 
-  vgg.$("2:94").on("click", () => {
+  vgg.$("2:94").on(EventType.Click, async () => {
     window.alert("Hello, VGG!")
   })
-
-  // vgg.addEventListener(
-  //   "/frames/0/childObjects/0",
-  //   "click",
-  //   'export default () => {console.log("Hello, VGG!")}'
-  // )
 }

@@ -1,6 +1,11 @@
 {
   "name": "@verygoodgraphics/vgg-wasm",
-  "private": true,
+  "homepage": "https://verygoodgraphics.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/verygoodgraphics/vgg_wasm.git"
+  },
+  "license": "MIT",
   "version": "0.0.1",
   "type": "module",
   "files": [
