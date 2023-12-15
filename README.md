@@ -27,6 +27,7 @@ if (vgg.state === State.Ready)
 | onLoad        | `EventCallback`                          | -        | -                                  |
 | onLoadError   | `EventCallback`                          | -        | -                                  |
 | onStateChange | `EventCallback`                          | -        | -                                  |
+| onSelect      | `EventCallback`                          | -        | -                                  |
 
 ### `.load()`
 

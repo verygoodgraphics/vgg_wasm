@@ -13,6 +13,7 @@ export interface VGGProps {
   onLoad?: EventCallback
   onLoadError?: EventCallback
   onStateChange?: EventCallback
+  onSelect?: EventCallback
 }
 
 enum Colors {
@@ -88,6 +89,7 @@ export class VGG<T extends string | number | symbol> {
     if (props.onLoad) this.on(EventType.Load, props.onLoad)
     if (props.onLoadError) this.on(EventType.LoadError, props.onLoadError)
     if (props.onStateChange) this.on(EventType.StateChange, props.onStateChange)
+    if (props.onSelect) this.on(EventType.Click, props.onSelect)
   }
 
   public async load() {
@@ -177,6 +179,10 @@ export class VGG<T extends string | number | symbol> {
 
                 if (parsedEvent.type === "select") {
                   this.observables.get(parsedEvent.path)?.next("click")
+                  this.eventManager.fire({
+                    type: EventType.Click,
+                    data: parsedEvent,
+                  })
                 }
               },
             },

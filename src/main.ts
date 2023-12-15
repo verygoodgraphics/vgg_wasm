@@ -15,9 +15,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 const vgg = new VGG<Generated_Nodes_Type>({
   src: "https://s3.vgg.cool/test/vgg.daruma",
   runtime: "https://s3.vgg.cool/test/runtime/latest",
-  // editMode: true,
+  editMode: true,
   verbose: true,
   canvas: document.querySelector("#canvas") as HTMLCanvasElement,
+  onSelect: async (event) => console.log("Select", event),
   // onLoad: async (event) => console.log("Load", event),
   // onLoadError: async (event) => console.log("Load Error", event),
   // onStateChange: async (state) => console.log("State Change", state),
