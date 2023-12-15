@@ -57,7 +57,7 @@ type EventListenerItem = {
   type: NativeEventType
   listener: string
 }
-interface EventListners {
+interface EventListeners {
   EventType?: Array<EventListenerItem>
 }
 
@@ -73,7 +73,7 @@ export interface VggSdkType {
 
   addEventListener(path: string, type: string, code: string): void
   removeEventListener(path: string, type: string, code: string): void
-  getEventListeners(path: string): EventListners
+  getEventListeners(path: string): EventListeners
 }
 
 declare global {
