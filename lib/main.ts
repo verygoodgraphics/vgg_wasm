@@ -364,3 +364,8 @@ class Observable {
     this.vggSdk.addEventListener(path, type, code)
   }
 }
+
+if (typeof globalThis !== "undefined") {
+  // @ts-expect-error
+  globalThis.VGG = VGG
+}
