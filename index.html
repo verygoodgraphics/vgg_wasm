@@ -23,20 +23,11 @@
       // onLoadError: async (event) => console.log("Load Error", event),
       // onStateChange: async (state) => console.log("State Change", state),
     })
-    console.log({ vgg })
     ;(async () => {
       await vgg.load()
 
       if (vgg.state === "ready") {
         await vgg.render()
-
-        // {
-        // const { nodes } = await vgg.render()
-        // const keys = Object.keys(nodes)
-        //   .map((i) => `"${i}"`)
-        //   .join(" | ")
-        // console.log(keys)
-        // }
 
         vgg.$("#vgg_home").on("click", async () => {
           window.alert("Hello, VGG!")
