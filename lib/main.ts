@@ -29,7 +29,7 @@ export type VGGNode = {
 }
 
 // Canvas renderer
-export class VGG<T extends string | number | symbol> {
+export class VGG<T extends string> {
   readonly props: VGGProps
 
   private defaultRuntime: string = "https://s5.vgg.cool/runtime/latest"
@@ -72,7 +72,7 @@ export class VGG<T extends string | number | symbol> {
 
   private requestAnimationFrame: any
 
-  private VGGNodes = {} as Record<T, VGGNode>
+  // private VGGNodes = {} as Record<T, VGGNode>
 
   constructor(props: VGGProps) {
     this.props = props
@@ -157,7 +157,7 @@ export class VGG<T extends string | number | symbol> {
         // Mount the wasmInstance to GlobalThis
         // @ts-expect-error
         const globalVggInstances = globalThis["vggInstances"] ?? {}
-        this.vggInstanceKey = this.vggSdk.getEnvKey()
+        this.vggInstanceKey = this.vggSdk.getEnv()
 
         if (this.editMode) {
           // if onClick is defined, add event listener
@@ -243,9 +243,7 @@ export class VGG<T extends string | number | symbol> {
       height: number
       editMode?: boolean
     }
-  ): Promise<{
-    nodes: Record<T, VGGNode>
-  }> {
+  ): Promise<void> {
     this.width = opts?.width ?? this.width
     this.height = opts?.height ?? this.height
     this.editMode = opts?.editMode ?? this.editMode
@@ -269,58 +267,58 @@ export class VGG<T extends string | number | symbol> {
       throw new Error("Failed to load Daruma file")
     }
 
-    const doc = await this.getDesignDocument()
-    return doc
+    // const doc = await this.getDesignDocument()
+    // return doc
   }
 
-  private reverseNodes(
-    nodes: Record<string, any>[],
-    map: Map<T, VGGNode>,
-    parentPath: string
-  ) {
-    for (const [index, node] of nodes.entries()) {
-      const currentPath = `${parentPath}/${index}`
-      map.set(node.id, {
-        path: currentPath,
-      } as VGGNode)
-      if (node.childObjects) {
-        this.reverseNodes(node.childObjects, map, currentPath + "/childObjects")
-      }
-    }
-  }
+  // private reverseNodes(
+  //   nodes: Record<string, any>[],
+  //   map: Map<T, VGGNode>,
+  //   parentPath: string
+  // ) {
+  //   for (const [index, node] of nodes.entries()) {
+  //     const currentPath = `${parentPath}/${index}`
+  //     map.set(node.id, {
+  //       path: currentPath,
+  //     } as VGGNode)
+  //     if (node.childObjects) {
+  //       this.reverseNodes(node.childObjects, map, currentPath + "/childObjects")
+  //     }
+  //   }
+  // }
 
-  public async getDesignDocument() {
-    try {
-      const docString = this.vggSdk?.getDesignDocument()
-      if (!docString) {
-        throw new Error("Failed to get design document")
-      }
-      const designDoc = JSON.parse(docString)
-      const map = new Map<T, VGGNode>()
-      this.reverseNodes(designDoc.frames, map, "/frames")
-      this.VGGNodes = Object.fromEntries(map) as Record<T, VGGNode>
+  // public async getDesignDocument() {
+  //   try {
+  //     const docString = this.vggSdk?.getDesignDocument()
+  //     if (!docString) {
+  //       throw new Error("Failed to get design document")
+  //     }
+  //     const designDoc = JSON.parse(docString)
+  //     const map = new Map<T, VGGNode>()
+  //     this.reverseNodes(designDoc.frames, map, "/frames")
+  //     this.VGGNodes = Object.fromEntries(map) as Record<T, VGGNode>
 
-      return {
-        nodes: this.VGGNodes,
-      }
-    } catch (err) {
-      // console.log(err)
-      return {
-        nodes: {} as Record<T, VGGNode>,
-      }
-    }
-  }
+  //     return {
+  //       nodes: this.VGGNodes,
+  //     }
+  //   } catch (err) {
+  //     // console.log(err)
+  //     return {
+  //       nodes: {} as Record<T, VGGNode>,
+  //     }
+  //   }
+  // }
 
   public $(selector: T): Observable {
     if (!this.vggSdk) {
       throw new Error("VGG SDK not ready")
     }
-    const path = this.VGGNodes[selector]?.path
-    const isExist = this.observables.get(path)
+
+    const isExist = this.observables.get(selector)
 
     if (!isExist) {
-      const newObservable = new Observable(path, this.vggSdk)
-      this.observables.set(path, newObservable)
+      const newObservable = new Observable(String(selector), this.vggSdk)
+      this.observables.set(selector, newObservable)
       return newObservable
     }
 
@@ -344,6 +342,7 @@ class Observable {
       type: eventType,
       callback: callback,
     })
+
     this.addEventListener(
       this.selector,
       eventType,

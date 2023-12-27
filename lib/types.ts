@@ -64,7 +64,7 @@ interface EventListeners {
 export interface VggSdkType {
   // addObserver(observer: VggSdkObserver): void;
 
-  getEnvKey(): string
+  getEnv(): string
   getDesignDocument(): string
 
   addAt(path: string, value: string): void

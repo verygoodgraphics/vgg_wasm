@@ -3,7 +3,7 @@ import "./style.css"
 // import { VGG, EventType } from "../dist/vgg-wasm.js"
 import { VGG, EventType } from "../lib/main"
 import { State } from "../lib/constants"
-import { Generated_Nodes_Type } from "./main.d"
+// import { Generated_Nodes_Type } from "./main.d"
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div>
@@ -12,10 +12,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   </div>
 `
 
-const vgg = new VGG<Generated_Nodes_Type>({
+const vgg = new VGG({
   src: "https://s3.vgg.cool/test/vgg.daruma",
   runtime: "https://s3.vgg.cool/test/runtime/latest",
-  editMode: true,
+  // editMode: true,
   verbose: true,
   canvas: document.querySelector("#canvas") as HTMLCanvasElement,
   onSelect: async (event) => console.log("Select", event),
@@ -37,7 +37,7 @@ if (vgg.state === State.Ready) {
   // console.log(keys)
   // }
 
-  vgg.$("2:94").on(EventType.Click, async () => {
+  vgg.$("#vgg_home").on(EventType.Click, async () => {
     window.alert("Hello, VGG!")
   })
 }
