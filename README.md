@@ -2,7 +2,37 @@
 
 ## Usage
 
-```js
+### Import through CDN
+
+```html
+<script src="https://www.unpkg.com/@verygoodgraphics/vgg-wasm"></script>
+<script>
+  const vgg = new VGG({
+    src: "https://s5.vgg.cool/vgg.daruma",
+    canvas: document.querySelector("#canvas"),
+  })
+
+  ;(async () => {
+    await vgg.load()
+
+    if (vgg.state === "ready") {
+      await vgg.render()
+
+      vgg.$("#vgg_home").on("click", async () => {
+        window.alert("Hello, VGG!")
+      })
+    }
+  })()
+</script>
+```
+
+### Import through NPM
+
+```bash
+npm install @verygoodgraphics/vgg-wasm
+```
+
+```ts
 import { VGG } from "@verygoodgraphics/vgg-wasm"
 
 const vgg = await new VGG({
@@ -10,8 +40,7 @@ const vgg = await new VGG({
   canvas: document.querySelector("#canvas") as HTMLCanvasElement,
 }).load()
 
-if (vgg.state === State.Ready)
-  await vgg.render()
+if (vgg.state === State.Ready) await vgg.render()
 ```
 
 ## API
