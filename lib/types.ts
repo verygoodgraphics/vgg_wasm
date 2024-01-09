@@ -1,6 +1,12 @@
 import { EventType } from "./constants"
 
-export type EventCallback = (event: VGGEvent) => Promise<void>
+export type EventCallback = (
+  event: VGGEvent,
+  opts: {
+    get: (selector: string) => any
+    set: (selector: string, value: any) => any
+  }
+) => Promise<void>
 
 /**
  * Event listeners registered with the event manager
@@ -74,10 +80,14 @@ export interface VggSdkType {
   addEventListener(path: string, type: string, code: string): void
   removeEventListener(path: string, type: string, code: string): void
   getEventListeners(path: string): EventListeners
+
+  getElement(id: string): string
+  updateElement(id: string, value: string): void
 }
 
 declare global {
   interface Window {
     _vgg_createWasmInstance: any
   }
+  var vggInstances: Record<string, VggSdkType>
 }

@@ -53,8 +53,8 @@ export class EventManager {
   }
 
   // Fires an event
-  public fire(event: VGGEvent): void {
+  public fire(event: VGGEvent, opts?: any): void {
     const eventListeners = this.getListeners(event.type)
-    eventListeners.forEach((listener) => listener.callback(event))
+    eventListeners.forEach((listener) => listener.callback(event, opts))
   }
 }
