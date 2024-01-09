@@ -13,8 +13,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 `
 
 const vgg = new VGG({
-  src: "https://s3.vgg.cool/test/vgg.daruma",
-  runtime: "https://s3.vgg.cool/test/runtime/latest",
+  // src: "https://s3.vgg.cool/test/vgg.daruma",
+  src: "https://verygoodgraphics.com/d/clqywc8tu002bo9mn8bctgekn",
+  runtime:
+    "https://s3.vgg.cool/test/runtime/58c4b139c59abf843cde477eb04de0dcb7b0ed82/",
   // editMode: true,
   verbose: true,
   canvas: document.querySelector("#canvas") as HTMLCanvasElement,
@@ -29,15 +31,16 @@ await vgg.load()
 if (vgg.state === State.Ready) {
   await vgg.render()
 
-  // {
-  // const { nodes } = await vgg.render()
-  // const keys = Object.keys(nodes)
-  //   .map((i) => `"${i}"`)
-  //   .join(" | ")
-  // console.log(keys)
-  // }
-
-  vgg.$("#vgg_home").on(EventType.Click, async () => {
-    window.alert("Hello, VGG!")
+  vgg.$("#increase").on(EventType.Click, async (_, { get, set }) => {
+    const count = get("#counter").content
+    set("#counter", {
+      content: (Number(count) + 1).toString(),
+    })
+  })
+  vgg.$("#decrease").on(EventType.Click, async (_, { get, set }) => {
+    const count = get("#counter").content
+    set("#counter", {
+      content: (Number(count) - 1).toString(),
+    })
   })
 }

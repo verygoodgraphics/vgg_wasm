@@ -155,7 +155,6 @@ export class VGG<T extends string> {
         this.vggSdk = new wasmInstance.VggSdk()
 
         // Mount the wasmInstance to GlobalThis
-        // @ts-expect-error
         const globalVggInstances = globalThis["vggInstances"] ?? {}
         this.vggInstanceKey = this.vggSdk.getEnv()
 
@@ -195,7 +194,6 @@ export class VGG<T extends string> {
           })
         }
 
-        // @ts-expect-error
         globalThis["vggInstances"] = globalVggInstances
 
         this.state = State.Ready
@@ -224,11 +222,13 @@ export class VGG<T extends string> {
    * @param type the type of event to subscribe to
    * @param callback callback to fire when the event occurs
    */
-  public on(type: EventType, callback: EventCallback) {
+  public on(type: EventType, callback: EventCallback): VGG<T> {
     this.eventManager.add({
       type: type,
       callback: callback,
     })
+
+    return this
   }
 
   /**
@@ -336,32 +336,66 @@ class Observable {
     this.vggSdk = vggSdk
   }
 
-  public on(eventType: EventType, callback: EventCallback) {
+  public on(eventType: EventType, callback: EventCallback): Observable {
     // console.log("on", eventType, callback)
     this.eventManager.add({
       type: eventType,
       callback: callback,
     })
 
+    const callbackString = "(" + callback.toString() + ")(_, {get, set})"
+    const fnString = `export default ${((
+      _: any,
+      opts: { instance: VGGWasmInstance }
+    ) => {
+      const sdk = new opts.instance.VggSdk()
+      // @ts-expect-error
+      const get = (selector: string) => {
+        const element = sdk.getElement(selector)
+        try {
+          const parsedElement = JSON.parse(element)
+          return parsedElement
+        } catch (err) {
+          return element
+        }
+      }
+      // @ts-expect-error
+      const set = (selector: string, data: any) => {
+        const dataString = JSON.stringify(data)
+        sdk.updateElement(selector, dataString)
+      }
+
+      return
+    }).toString()}`
+
     this.addEventListener(
       this.selector,
       eventType,
-      `export default ${callback.toString()}`
+      `${fnString.replace("return;", "return " + callbackString)}`
     )
+
+    return this
   }
 
-  public next(eventType: EventType) {
-    // console.log("next", eventType)
-    this.eventManager.fire({
-      type: eventType,
-    })
-  }
-
-  private addEventListener(path: string, type: string, code: string) {
+  public update(data: string) {
     if (!this.vggSdk) {
       throw new Error("VGG SDK not ready")
     }
-    this.vggSdk.addEventListener(path, type, code)
+    this.vggSdk.updateElement(this.selector, data)
+  }
+
+  private addEventListener(id: string, type: string, code: string) {
+    if (!this.vggSdk) {
+      throw new Error("VGG SDK not ready")
+    }
+    this.vggSdk.addEventListener(id, type, code)
+
+    return {
+      selector: id,
+      remove: () => {
+        this.vggSdk.removeEventListener(id, type, code)
+      },
+    }
   }
 }
 
