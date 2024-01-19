@@ -1,12 +1,22 @@
 import { EventType } from "./constants"
+import { Observable } from "./observable"
+
+export type CallbackHandlers = {
+  get: (selector: string) => any
+  set: (selector: string, value: any) => any
+}
+
+export type VGGEventCallback = (
+  element: Observable,
+  handlers: CallbackHandlers
+) => Promise<void>
 
 export type EventCallback = (
   event: VGGEvent,
-  opts: {
-    get: (selector: string) => any
-    set: (selector: string, value: any) => any
-  }
+  handlers: CallbackHandlers
 ) => Promise<void>
+
+export type CurriedCallback = (handlers: CallbackHandlers) => Promise<void>
 
 /**
  * Event listeners registered with the event manager
@@ -69,6 +79,7 @@ interface EventListeners {
 
 export interface VggSdkType {
   // addObserver(observer: VggSdkObserver): void;
+  listeners: Map<string, CurriedCallback>
 
   getEnv(): string
   getDesignDocument(): string
